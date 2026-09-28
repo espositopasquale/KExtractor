@@ -16,7 +16,7 @@ KExtractor is rooted in a deterministic, linguistically grounded architecture ra
 ## Core Capabilities
 - **Advanced Natural Language Processing** - Implements a shift-reduce dependency parsing strategy to ensure high-fidelity syntactic analysis and relationship extraction.
 - **Coreference Resolution** - Deterministically resolves pronominal references prior to relationship extraction, reducing entity ambiguity in the final graph structure.
-- **Semantic Web Integration** - Outputs linked data in JSON-LD (default), Turtle, RDF/XML, N-Triples, and N-Quads formats. The graphs integrate the schema.org vocabulary alongside a custom project namespace (`kex`) for downstream graph database ingestion and automated reasoning.
+- **Semantic Web Integration** - Outputs linked data in JSON-LD (default), Turtle, RDF/XML, OWL-compatible RDF/XML, and N-Quads formats. The graphs integrate the schema.org vocabulary alongside a custom project namespace (`kex`) for downstream graph database ingestion and automated reasoning.
 - **Multi-Format Graph Conversion** - Built-in utilities convert JSON-LD output into other W3C standards (Turtle, RDF/XML, N-Quads).
 - **Corpus Processing** - Supports both direct string input and batch processing of flat text documents via a terminal interface.
 - **Dual Execution Modes** - Runs processing directly in-process for quick tasks, or routes requests to a background CoreNLP server for large-scale processing without repeatedly loading linguistic resources.
@@ -84,12 +84,13 @@ java -Xmx8g -jar target/KExtractor-0.1.0.jar \
 > **Note:** If the output file parameter is omitted, the system defaults to generating a `kextractor-output.json` file in the current working directory.
 ### Launch Scripts (Recommended)
 The `run-mac-linux.sh` and `run-windows.bat` scripts wrap the same executable and support optional flags to control execution mode and output formatting.
-#### Available Flags
-| Flag | Description |
-|---|---|
-| `--server` | Routes extraction to a local CoreNLP server on port 9000 (starts it if it isn't running). Server is configured with a 1500-second request timeout. |
-| `--format=<format>` | Output graph format. Supported values: `jsonld` (default), `ttl`, `nquads`, `rdf`. |
-| `--full-analysis` | Performs a full analysis (defaults to `true`). |
+#### CLI Flags
+| Flag | Value | Description | Default |
+|---|---|---|---|
+| `--server` | None | Routes extraction to the local CoreNLP server on port 9000, starting it when needed. | Local pipeline |
+| `--format=<format>` or `--format <format>` | `jsonld`, `ttl`, `nquads`, `rdf`, `owl` | Selects the graph serialization format. | `jsonld` |
+| `--full-analysis` | None | Includes the optional detailed analysis data in the result. | Disabled |
+| `--graph-only` | None | Writes only the graph serialization without extraction metadata. | Disabled |
 > **Note:** When using `--format`, you can pass the argument either with an equals sign (e.g., `--format=ttl`) or separated by a space (e.g., `--format ttl`).
 ### macOS / Linux
 #### Local Mode (Default)
@@ -105,6 +106,13 @@ Extract knowledge and output the result as a Turtle (ttl) file.
 ./run-mac-linux.sh --format=ttl \
   "Linus Torvalds created the Linux kernel in 1991." \
   output.json
+```
+
+To write only the JSON-LD graph without the surrounding extraction metadata:
+```bash
+./run-mac-linux.sh --graph-only \
+  "Linus Torvalds created the Linux kernel in 1991." \
+  graph.json
 ```
 #### Local Server Mode (`--server`)
 Best suited for large documents, batch processing, or repeated extraction tasks where avoiding repeated initialization overhead improves performance. If no local CoreNLP server is detected, the launch script automatically starts one in the background and waits for it to become ready before processing the input.
@@ -175,6 +183,7 @@ Linus Torvalds created the Linux kernel in 1991.
 ```
 
 If `--format=ttl` is used, an identical graph representation will be saved as `output.ttl` following W3C Turtle syntax.
+If `--format=owl` is used, the graph is saved as OWL-compatible RDF/XML, suitable for use as an `.owl` file.
 ## Troubleshooting
 ### java.lang.OutOfMemoryError
 This typically occurs when the JVM heap is too small for the combined memory footprint of the loaded pipeline models.
@@ -223,6 +232,7 @@ KExtractor produces **JSON-LD** by default and supports conversion to additional
 - JSON-LD
 - Turtle (TTL)
 - RDF/XML
+- OWL-compatible RDF/XML
 - N-Quads
 For more information on RDF and Semantic Web standards, see the World Wide Web Consortium (W3C): https://www.w3.org/RDF/
 ### Stanford CoreNLP

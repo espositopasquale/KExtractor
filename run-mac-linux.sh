@@ -6,6 +6,7 @@ INPUT=""
 OUTPUT=""
 FORMAT=""
 FULL_ANALYSIS=false
+GRAPH_ONLY=false
 
 # 1. Argument parsing 
 while [[ $# -gt 0 ]]; do
@@ -26,6 +27,10 @@ while [[ $# -gt 0 ]]; do
       FULL_ANALYSIS=true
       shift
       ;;
+    --graph-only)
+      GRAPH_ONLY=true
+      shift
+      ;;
     *)
 
       if [ -z "$INPUT" ]; then
@@ -40,10 +45,11 @@ done
 
 # 2. Minimum arguments check
 if [ -z "$INPUT" ]; then
-  echo -e "\nUsage: ./run-mac-linux.sh [--server] [--format=jsonld|ttl|nquads|rdf] \"Text to analyze\" [output_file.json]"
+  echo -e "\nUsage: ./run-mac-linux.sh [--server] [--graph-only] [--format=jsonld|ttl|nquads|rdf|owl] \"Text to analyze\" [output_file]"
   echo -e "  --server           : Start/Use the local CoreNLP server (port 9000)"
-  echo -e "  --format=<format>  : Output graph format: jsonld (default), ttl, nquads, rdf\n"
+  echo -e "  --format=<format>  : Output graph format: jsonld (default), ttl, nquads, rdf, owl\n"
   echo -e "  --full-analysis    : Perform full analysis (default: false)\n"
+  echo -e "  --graph-only       : Write only the RDF graph, without analysis metadata\n"
   exit 1
 fi
 
@@ -54,6 +60,9 @@ if [ -n "$FORMAT" ]; then
 fi
 if [ "$FULL_ANALYSIS" = true ]; then
   EXTRA_ARGS+=(--full-analysis)
+fi
+if [ "$GRAPH_ONLY" = true ]; then
+  EXTRA_ARGS+=(--graph-only)
 fi
 
 # 3. Server Management 

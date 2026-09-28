@@ -57,6 +57,7 @@ public class GraphSerializer {
             case NQUADS:
                 return Lang.NQUADS;
             case RDFXML:
+            case OWL:
                 return Lang.RDFXML;
             default:
                 throw new IllegalArgumentException("Unhandled format: " + format);

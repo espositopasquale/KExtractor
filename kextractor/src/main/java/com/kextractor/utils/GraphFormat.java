@@ -7,7 +7,8 @@ public enum GraphFormat {
     JSONLD,
     TURTLE,
     NQUADS,
-    RDFXML;
+    RDFXML,
+    OWL;
 
     
     public static GraphFormat fromString(String value) {
@@ -29,6 +30,8 @@ public enum GraphFormat {
             case "rdf":
             case "xml":
                 return RDFXML;
+            case "owl":
+                return OWL;
             default:
                 throw new IllegalArgumentException("Unsupported graph format: " + value);
         }

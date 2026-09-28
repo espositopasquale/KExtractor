@@ -33,6 +33,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kextractor.banner.Banner;
 import com.kextractor.nlp.pipeline.nonserver.Pipeline;
 import com.kextractor.nlp.pipeline.server.ServerPipeline;
+import com.kextractor.utils.GraphFormat;
 
 public class App {
 
@@ -47,6 +48,7 @@ public class App {
 
         boolean useServer = false;
         boolean fullAnalysis = false;
+        boolean graphOnly = false;
         String text = "Project Beta Cloud Migration was executed by Neo, the One, with assistance from Trinity, a skilled operator of the Matrix. The mission targeted a legacy system hidden deep within the Matrix and successfully migrated its core infrastructure into a secure digital environment. Before the operation began, Morpheus reviewed the migration plan and assessed the security protocols to ensure the mission was ready for execution. The operation commenced at 02:00 AM and concluded at 04:00 AM on March 14, 2024. The total estimated cost of the operation was 12,000 EUR. Before joining the crew aboard the Nebuchadnezzar, Neo had been trapped inside the Matrix, while Trinity had already established herself as one of its most capable operators.";
         String outputPath = "kextractor-output.json";
         String graphFormat = DEFAULT_GRAPH_FORMAT;
@@ -60,6 +62,8 @@ public class App {
                 graphFormat = arg.substring("--format=".length());
             } else if (arg.equalsIgnoreCase("--full-analysis")) {
                 fullAnalysis = true;
+            } else if (arg.equalsIgnoreCase("--graph-only")) {
+                graphOnly = true;
             } else {
                 cleanArgs.add(arg);
             }
@@ -84,6 +88,8 @@ public class App {
         logger.info("Output will be written to: {}", outputPath);
         logger.info("Requested graph format: {}", graphFormat);
 
+        GraphFormat requestedFormat = GraphFormat.fromString(graphFormat);
+
         HashMap<String, Object> result;
         long startTime = System.currentTimeMillis();
 
@@ -102,8 +108,17 @@ public class App {
         System.out.println("\u001B[32m" + "Extraction complete in " + (elapsed / 1000.0) + " seconds." + "\u001B[0m\n");
 
         try {
-            ObjectMapper mapper = new ObjectMapper();
-            mapper.writerWithDefaultPrettyPrinter().writeValue(new File(outputPath), result);
+            if (requestedFormat == GraphFormat.JSONLD) {
+                ObjectMapper mapper = new ObjectMapper();
+                Object output = graphOnly ? result.get("rdfKnowledgeGraph") : result;
+                mapper.writerWithDefaultPrettyPrinter().writeValue(new File(outputPath), output);
+            } else {
+                Object serializedGraph = result.get("rdfKnowledgeGraph");
+                if (!(serializedGraph instanceof String)) {
+                    throw new IllegalStateException("Pipeline did not return serialized graph data");
+                }
+                Files.writeString(Paths.get(outputPath), (String) serializedGraph);
+            }
             logger.info("Knowledge graph serialized successfully to {}", outputPath);
             System.out.println("Processing complete! Data successfully exported to: " + outputPath);
         } catch (IOException e) {
