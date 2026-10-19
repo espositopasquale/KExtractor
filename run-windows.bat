@@ -9,7 +9,8 @@ set "FORMAT="
 set "FULL_ANALYSIS=false"
 set "GRAPH_ONLY=false"
 
-:: 1. Argument parsing 
+:: 1. Argument parsing
+:parse_args
 if "%~1"=="" goto check_args
 
 if /I "%~1"=="--server" (
@@ -26,6 +27,7 @@ if /I "!ARG:~0,9!"=="--format=" (
 )
 
 if /I "%~1"=="--format" (
+    if "%~2"=="" (echo Missing value for --format & exit /b 1)
     set "FORMAT=%~2"
     shift
     shift
@@ -44,6 +46,8 @@ if /I "%~1"=="--graph-only" (
     goto parse_args
 )
 
+if "!ARG:~0,1!"=="-" (echo Unknown option: %~1 & exit /b 1)
+
 if "%INPUT%"=="" (
     set "INPUT=%~1"
     shift
@@ -54,7 +58,8 @@ if "%OUTPUT%"=="" (
     shift
     goto parse_args
 )
-goto parse_args
+echo Too many arguments
+exit /b 1
 
 :: 2. Minimum arguments check
 :check_args
@@ -69,45 +74,29 @@ if "%INPUT%"=="" (
     exit /b 1
 )
 
+if not exist "%~dp0kextractor.jar" (echo Missing kextractor.jar beside the launcher & exit /b 1)
+set "OUTPUT_ARG="
+if not "%OUTPUT%"=="" set OUTPUT_ARG="%OUTPUT%"
+
 :: Build optional arguments string
 set "EXTRA_ARGS="
 if not "%FORMAT%"=="" set "EXTRA_ARGS=%EXTRA_ARGS% --format=%FORMAT%"
 if "%FULL_ANALYSIS%"=="true" set "EXTRA_ARGS=%EXTRA_ARGS% --full-analysis"
 if "%GRAPH_ONLY%"=="true" set "EXTRA_ARGS=%EXTRA_ARGS% --graph-only"
 
-:: 3. Server Management 
-if "%MODE%"=="server" (
-    echo [Server Mode] Checking CoreNLP...
-    :: Check if port 9000 is responding using curl (available in Windows 10+)
-    curl -s "http://localhost:9000/" >nul 2>&1
-    if errorlevel 1 (
-        echo [!] Server not found. Starting CoreNLP in the background...
-
-        start /B "" java -Xmx8g -cp "kextractor.jar" edu.stanford.nlp.pipeline.StanfordCoreNLPServer -port 9000 -timeout 150000 > corenlp_server.log 2>&1
-        echo Waiting for models to load into memory ^(may take up to 90 sec on first run^)...
-
-        :: Wait loop until the server returns HTTP 200
-        :wait_loop
-        timeout /t 2 /nobreak >nul
-        curl -s "http://localhost:9000/" >nul 2>&1
-        if errorlevel 1 (
-            <nul set /p="."
-            goto wait_loop
-        )
-        echo.
-        echo [OK] Server ready!
-        echo.
-    ) else (
-        echo [OK] CoreNLP Server is already running on port 9000.
-        echo.
-    )
-    :: Execute the jar passing the --server flag and extra arguments
-    java -Dorg.slf4j.simpleLogger.defaultLogLevel=off -Xmx8g -jar kextractor.jar --server %EXTRA_ARGS% "%INPUT%" "%OUTPUT%"
-) else (
-    :: Classic Local Mode
-    echo [Local Mode] Loading pipeline into RAM...
-    echo.
-    java -Dorg.slf4j.simpleLogger.defaultLogLevel=off -Xmx8g -jar kextractor.jar %EXTRA_ARGS% "%INPUT%" "%OUTPUT%"
-)
-
-endlocal
+:: 3. Server Management
+if not "%MODE%"=="server" goto execute
+curl --fail --silent --connect-timeout 2 --max-time 3 "http://localhost:9000/ready" >nul 2>&1
+if not errorlevel 1 goto execute
+start /B "" java -Xmx8g -cp "%~dp0kextractor.jar" edu.stanford.nlp.pipeline.StanfordCoreNLPServer -port 9000 -timeout 1500000 > corenlp_server.log 2>&1
+set /a ATTEMPTS=0
+:wait_loop
+set /a ATTEMPTS+=1
+if %ATTEMPTS% geq 60 (echo CoreNLP startup timed out; see corenlp_server.log & exit /b 1)
+timeout /t 2 /nobreak >nul
+curl --fail --silent --connect-timeout 2 --max-time 3 "http://localhost:9000/ready" >nul 2>&1
+if errorlevel 1 goto wait_loop
+:execute
+if "%MODE%"=="server" set "EXTRA_ARGS=%EXTRA_ARGS% --server"
+java -Dorg.slf4j.simpleLogger.defaultLogLevel=off -Xmx8g -jar "%~dp0kextractor.jar" %EXTRA_ARGS% "%INPUT%" %OUTPUT_ARG%
+exit /b %ERRORLEVEL%

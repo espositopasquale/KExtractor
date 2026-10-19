@@ -2,7 +2,8 @@ package com.kextractor.version;
 
 public final class Version {
 
-    private Version() {}
+    private Version() {
+    }
 
     public static final String NAME = "KExtractor";
     public static final String VERSION = "0.2.0";
