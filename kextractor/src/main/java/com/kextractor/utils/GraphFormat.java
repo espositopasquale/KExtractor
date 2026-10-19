@@ -2,7 +2,6 @@ package com.kextractor.utils;
 
 import java.util.Locale;
 
-
 public enum GraphFormat {
     JSONLD,
     TURTLE,
@@ -10,7 +9,6 @@ public enum GraphFormat {
     RDFXML,
     OWL;
 
-    
     public static GraphFormat fromString(String value) {
         if (value == null) {
             return JSONLD;

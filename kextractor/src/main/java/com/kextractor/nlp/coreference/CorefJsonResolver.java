@@ -51,8 +51,6 @@ public class CorefJsonResolver {
                 continue;
             }
 
-
-
             for (JsonNode mention : chain) {
 
                 if (mention.path("id").asInt(-1) == repId) {
@@ -70,17 +68,14 @@ public class CorefJsonResolver {
                     continue;
                 }
 
-                
                 if ("PROPER".equals(mentionType)) {
                     continue;
                 }
 
-                
                 if (pronounsOnly && !"PRONOMINAL".equals(mentionType)) {
                     continue;
                 }
 
-                
                 if (PLURAL_PRONOUNS.contains(mentionText.toLowerCase())) {
                     continue;
                 }
@@ -97,9 +92,9 @@ public class CorefJsonResolver {
 
                 JsonNode tokens = sentences.get(sentIndex).path("tokens");
 
-                if (startIdx < 0 ||
-                    endIdx < startIdx ||
-                    endIdx >= tokens.size()) {
+                if (startIdx < 0
+                        || endIdx < startIdx
+                        || endIdx >= tokens.size()) {
                     continue;
                 }
 
@@ -117,7 +112,7 @@ public class CorefJsonResolver {
 
         replacements.sort(
                 Comparator.comparingInt((Replacement r) -> r.start)
-                          .reversed());
+                        .reversed());
 
         StringBuilder sb = new StringBuilder(originalText);
 

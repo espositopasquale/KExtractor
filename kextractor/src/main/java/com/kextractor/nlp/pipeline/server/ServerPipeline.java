@@ -2,16 +2,14 @@ package com.kextractor.nlp.pipeline.server;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kextractor.nlp.coreference.CorefJsonResolver;
+import com.kextractor.nlp.pipeline.DependencyDiagnostics;
 import com.kextractor.triples.GraphSerializer;
-import com.kextractor.triples.schema.SchemaGen;
-import com.kextractor.utils.EntityMetadata;
+import com.kextractor.triples.semantic.SemanticGraphBuilder;
 import com.kextractor.utils.GraphFormat;
 
 public class ServerPipeline {
@@ -48,26 +46,16 @@ public class ServerPipeline {
         }
 
         // 2. Extract named entities 
-        Map<String, EntityMetadata> entityRegistry = new HashMap<>();
-        ArrayList<HashMap<String, Object>> entities = new ArrayList<>();
-        if (root.has("sentences")) {
-            for (JsonNode sentence : root.get("sentences")) {
-                if (sentence.has("entitymentions")) {
-                    for (JsonNode em : sentence.get("entitymentions")) {
-                        String emText = em.get("text").asText();
-                        String emType = em.get("ner").asText();
-                        entityRegistry.put(emText.toLowerCase(), new EntityMetadata(emText, emType));
-                        if (fullAnalysis) {
-                            HashMap<String, Object> e = new HashMap<>();
-                            e.put("text", emText);
-                            e.put("type", emType);
-                            entities.add(e);
-                        }
-                    }
+        if (fullAnalysis) {
+            ArrayList<HashMap<String, Object>> entities = new ArrayList<>();
+            for (JsonNode sentence : root.path("sentences")) {
+                for (JsonNode em : sentence.path("entitymentions")) {
+                    HashMap<String, Object> e = new HashMap<>();
+                    e.put("text", em.path("text").asText());
+                    e.put("type", em.path("ner").asText());
+                    entities.add(e);
                 }
             }
-        }
-        if (fullAnalysis) {
             result.put("entities", entities);
         }
 
@@ -78,36 +66,7 @@ public class ServerPipeline {
                 for (JsonNode sent : root.get("sentences")) {
                     HashMap<String, Object> s = new HashMap<>();
                     s.put("id", sent.get("index").asInt() + 1);
-                    HashMap<String, Object> rootGraph = new HashMap<>();
-                    JsonNode deps = sent.has("enhancedPlusPlusDependencies")
-                            ? sent.get("enhancedPlusPlusDependencies")
-                            : sent.get("basicDependencies");
-                    if (deps != null) {
-                        JsonNode rootNode = null;
-                        for (JsonNode edge : deps) {
-                            if ("ROOT".equals(edge.get("dep").asText())) {
-                                rootNode = edge;
-                                break;
-                            }
-                        }
-                        if (rootNode != null) {
-                            int rootGovIndex = rootNode.get("dependent").asInt();
-                            rootGraph.put("rootVerb", rootNode.get("dependentGloss").asText());
-                            rootGraph.put("rootIndex", rootGovIndex);
-                            ArrayList<HashMap<String, Object>> arguments = new ArrayList<>();
-                            for (JsonNode edge : deps) {
-                                if (edge.get("governor").asInt() == rootGovIndex) {
-                                    HashMap<String, Object> arg = new HashMap<>();
-                                    arg.put("relationship", edge.get("dep").asText());
-                                    arg.put("argumentWord", edge.get("dependentGloss").asText());
-                                    arg.put("argumentIndex", edge.get("dependent").asInt());
-                                    arguments.add(arg);
-                                }
-                            }
-                            rootGraph.put("arguments", arguments);
-                        }
-                    }
-                    s.put("rootVerbKnowledgeGraph", rootGraph.isEmpty() ? null : rootGraph);
+                    s.put("rootVerbKnowledgeGraph", DependencyDiagnostics.rootVerbGraph(sent));
                     sentences.add(s);
                 }
             }
@@ -117,7 +76,7 @@ public class ServerPipeline {
         // 4. Extract coreference chains
         if (fullAnalysis) {
             ArrayList<HashMap<String, Object>> corefs = new ArrayList<>();
-            if (root != null && root.has("corefs")) {
+            if (root.has("corefs")) {
                 for (Map.Entry<String, JsonNode> entry : root.get("corefs").properties()) {
                     JsonNode chain = entry.getValue();
                     if (chain.isArray()) {
@@ -145,81 +104,46 @@ public class ServerPipeline {
             result.put("coreferences", corefs);
         }
 
-        // 5. Resolve coreferences locally using the JSON character offsets
-        String resolvedText = CorefJsonResolver.resolveCoreferencesFromJson(text, root, false);
+        // Optional OpenIE diagnostics; the final graph always uses original-text annotations.
         if (fullAnalysis) {
+            // 5. Resolve coreferences locally using the JSON character offsets
+            String resolvedText = CorefJsonResolver.resolveCoreferencesFromJson(text, root, false);
             result.put("resolvedText", resolvedText);
-        }
 
-        // 6. Extract OpenIE triples and generate the Schema.org RDF graph
-        String resolvedJson = CoreNLPClient.analyzeText(resolvedText);
-        JsonNode resolvedRoot = mapper.readTree(resolvedJson);
+            // 6. Extract diagnostic OpenIE triples
+            String resolvedJson = resolvedText.equals(text) ? jsonFromServer : CoreNLPClient.analyzeText(resolvedText);
+            JsonNode resolvedRoot = mapper.readTree(resolvedJson);
 
-        ArrayList<HashMap<String, Object>> relations = new ArrayList<>();
-        List<HashMap<String, Object>> collectedTriples = new ArrayList<>();
-        if (resolvedRoot.has("sentences")) {
-            for (JsonNode sent : resolvedRoot.get("sentences")) {
-                if (sent.has("openie")) {
-                    for (JsonNode triple : sent.get("openie")) {
-                        String rawSub = triple.get("subject").asText();
-                        String rawRel = triple.get("relation").asText();
-                        String rawObj = triple.get("object").asText();
-                        String alignedSubject = resolveServerToken(rawSub, entityRegistry);
-                        String alignedObject = resolveServerToken(rawObj, entityRegistry);
-                        HashMap<String, Object> r = new HashMap<>();
-                        r.put("subject", alignedSubject);
-                        r.put("relation", rawRel);
-                        r.put("object", alignedObject);
-                        r.put("confidence", triple.has("confidence") ? triple.get("confidence").asDouble() : 1.0);
-                        collectedTriples.add(r);
-                        if (fullAnalysis) {
+            ArrayList<HashMap<String, Object>> relations = new ArrayList<>();
+            if (resolvedRoot.has("sentences")) {
+                for (JsonNode sent : resolvedRoot.get("sentences")) {
+                    if (sent.has("openie")) {
+                        for (JsonNode triple : sent.get("openie")) {
+                            HashMap<String, Object> r = new HashMap<>();
+                            r.put("subject", triple.get("subject").asText());
+                            r.put("relation", triple.get("relation").asText());
+                            r.put("object", triple.get("object").asText());
+                            r.put("confidence", triple.has("confidence") ? triple.get("confidence").asDouble() : 1.0);
                             relations.add(r);
                         }
                     }
                 }
             }
-        }
-        if (fullAnalysis) {
             result.put("triples", relations);
+
         }
 
-        Map<String, Object> schemaRdfGraph = SchemaGen.generateServerGraph(collectedTriples, entityRegistry);
+        Map<String, Object> semanticGraph = SemanticGraphBuilder.build(text, root);
 
         GraphFormat format = GraphFormat.fromString(graphFormat);
         if (format == GraphFormat.JSONLD) {
-            result.put("rdfKnowledgeGraph", schemaRdfGraph);
+            result.put("rdfKnowledgeGraph", semanticGraph);
         } else {
-            String serialized = GraphSerializer.serialize(schemaRdfGraph, format);
+            String serialized = GraphSerializer.serialize(semanticGraph, format);
             result.put("rdfKnowledgeGraph", serialized);
         }
 
         return result;
     }
 
-    private static String resolveServerToken(String token, Map<String, EntityMetadata> registry) {
-        if (token == null)
-            return "";
-        String cleanToken = token.toLowerCase().trim();
-
-        if (cleanToken.equals("there") || cleanToken.equals("here")) {
-            return findRegistryEntity(registry, List.of("CITY", "COUNTRY", "LOCATION", "STATE_OR_PROVINCE"))
-                    .orElse(token);
-        }
-
-        if (cleanToken.equals("it") || cleanToken.equals("its")) {
-            return findRegistryEntity(registry, List.of("ORGANIZATION", "MISC")).orElse(token);
-        }
-        if (cleanToken.equals("he") || cleanToken.equals("she") || cleanToken.equals("they")
-                || cleanToken.equals("who")) {
-            return findRegistryEntity(registry, List.of("PERSON")).orElse(token);
-        }
-        return token;
-    }
-
-    private static Optional<String> findRegistryEntity(Map<String, EntityMetadata> registry, List<String> targetTypes) {
-        return registry.values().stream()
-                .filter(meta -> meta.type != null && targetTypes.contains(meta.type.toUpperCase()))
-                .map(meta -> (String) meta.label)
-                .findFirst();
-    }
 }

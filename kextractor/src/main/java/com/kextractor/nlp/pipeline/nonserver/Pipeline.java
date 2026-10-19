@@ -3,13 +3,14 @@ package com.kextractor.nlp.pipeline.nonserver;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kextractor.nlp.coreference.CorefResolver;
+import com.kextractor.nlp.pipeline.DependencyDiagnostics;
 import com.kextractor.triples.GraphSerializer;
-import com.kextractor.triples.schema.SchemaGen;
-import com.kextractor.utils.EntityMetadata;
+import com.kextractor.triples.semantic.SemanticGraphBuilder;
 import com.kextractor.utils.GraphFormat;
 
 import edu.stanford.nlp.coref.data.CorefChain;
@@ -21,11 +22,10 @@ import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.pipeline.CoreDocument;
 import edu.stanford.nlp.pipeline.CoreEntityMention;
 import edu.stanford.nlp.pipeline.CoreSentence;
-import edu.stanford.nlp.semgraph.SemanticGraph;
+import edu.stanford.nlp.pipeline.JSONOutputter;
 import edu.stanford.nlp.util.CoreMap;
 
 public class Pipeline {
-
 
     public static HashMap<String, Object> pipelineMain(String text, String graphFormat, boolean fullAnalysis)
             throws Exception {
@@ -34,6 +34,7 @@ public class Pipeline {
 
         CoreDocument doc = new CoreDocument(text);
         Helper.getPipeline().annotate(doc);
+        JsonNode originalAnnotation = new ObjectMapper().readTree(JSONOutputter.jsonPrint(doc.annotation()));
 
         // 1. Extract Tokens
         if (fullAnalysis) {
@@ -52,18 +53,14 @@ public class Pipeline {
         }
 
         // 2. Extract Entities 
-        Map<String, EntityMetadata> entityRegistry = new HashMap<>();
-        ArrayList<HashMap<String, Object>> entities = new ArrayList<>();
-        for (CoreEntityMention em : doc.entityMentions()) {
-            entityRegistry.put(em.text().toLowerCase(), new EntityMetadata(em.text(), em.entityType()));
-            if (fullAnalysis) {
+        if (fullAnalysis) {
+            ArrayList<HashMap<String, Object>> entities = new ArrayList<>();
+            for (CoreEntityMention em : doc.entityMentions()) {
                 HashMap<String, Object> e = new HashMap<>();
                 e.put("text", em.text());
                 e.put("type", em.entityType());
                 entities.add(e);
             }
-        }
-        if (fullAnalysis) {
             result.put("entities", entities);
         }
 
@@ -73,11 +70,10 @@ public class Pipeline {
             int sid = 1;
             for (CoreSentence sentence : doc.sentences()) {
                 HashMap<String, Object> s = new HashMap<>();
-                s.put("id", sid++);
+                s.put("id", sid);
                 s.put("text", sentence.text());
-                SemanticGraph demoGraph = sentence.dependencyParse();
-                HashMap<String, Object> rootGraph = SchemaGen.buildRootVerbGraph(demoGraph);
-                s.put("rootVerbKnowledgeGraph", rootGraph);
+                s.put("rootVerbKnowledgeGraph", DependencyDiagnostics.rootVerbGraph(originalAnnotation.path("sentences").get(sid - 1)));
+                sid++;
                 sentences.add(s);
             }
             result.put("sentences", sentences);
@@ -106,48 +102,46 @@ public class Pipeline {
             result.put("coreferences", corefs);
         }
 
-        // 5. Resolve Coreferences 
-        String resolvedText = CorefResolver.resolveCoreferences(doc, false);
+        // Optional OpenIE diagnostics; the final graph always uses original-text annotations.
         if (fullAnalysis) {
+            // 5. Resolve coreferences
+            String resolvedText = CorefResolver.resolveCoreferences(doc, false);
             result.put("resolvedText", resolvedText);
-        }
 
-        Annotation legacyDoc = new Annotation(resolvedText);
-        Helper.getPipeline().annotate(legacyDoc);
+            Annotation legacyDoc;
+            if (resolvedText.equals(text)) {
+                legacyDoc = doc.annotation();
+            } else {
+                legacyDoc = new Annotation(resolvedText);
+                Helper.getPipeline().annotate(legacyDoc);
+            }
 
-        // 6. Extract Triples & Generate RDF Graph
-        ArrayList<HashMap<String, Object>> relations = new ArrayList<>();
-        List<RelationTriple> collectedTriples = new ArrayList<>();
-        for (CoreMap sentence : legacyDoc.get(CoreAnnotations.SentencesAnnotation.class)) {
-            Collection<RelationTriple> triples = sentence.get(NaturalLogicAnnotations.RelationTriplesAnnotation.class);
-            if (triples != null) {
-                for (RelationTriple triple : triples) {
-                    String rawSub = triple.subjectGloss();
-                    String rawRel = triple.relationGloss();
-                    String rawObj = triple.objectGloss();
-                    if (fullAnalysis) {
+            // 6. Extract diagnostic OpenIE triples
+            ArrayList<HashMap<String, Object>> relations = new ArrayList<>();
+            for (CoreMap sentence : legacyDoc.get(CoreAnnotations.SentencesAnnotation.class)) {
+                Collection<RelationTriple> triples = sentence.get(NaturalLogicAnnotations.RelationTriplesAnnotation.class);
+                if (triples != null) {
+                    for (RelationTriple triple : triples) {
                         HashMap<String, Object> r = new HashMap<>();
                         r.put("confidence", triple.confidence);
-                        r.put("subject", rawSub);
-                        r.put("relation", rawRel);
-                        r.put("object", rawObj);
+                        r.put("subject", triple.subjectGloss());
+                        r.put("relation", triple.relationGloss());
+                        r.put("object", triple.objectGloss());
                         relations.add(r);
                     }
-                    collectedTriples.add(triple);
                 }
             }
-        }
-        if (fullAnalysis) {
             result.put("triples", relations);
+
         }
 
-        Map<String, Object> schemaRdfGraph = SchemaGen.generateGraph(collectedTriples, entityRegistry, doc);
+        Map<String, Object> semanticGraph = SemanticGraphBuilder.build(text, originalAnnotation);
 
         GraphFormat format = GraphFormat.fromString(graphFormat);
         if (format == GraphFormat.JSONLD) {
-            result.put("rdfKnowledgeGraph", schemaRdfGraph);
+            result.put("rdfKnowledgeGraph", semanticGraph);
         } else {
-            String serialized = GraphSerializer.serialize(schemaRdfGraph, format);
+            String serialized = GraphSerializer.serialize(semanticGraph, format);
             result.put("rdfKnowledgeGraph", serialized);
         }
 

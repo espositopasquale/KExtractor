@@ -10,18 +10,16 @@ public class Helper {
     public static StanfordCoreNLP getPipeline() {
         if (pipeline == null) {
             pipeline = new StanfordCoreNLP(PropertiesUtils.asProperties(
-                
                     "annotators", "tokenize,ssplit,pos,lemma,ner,depparse,coref,natlog,openie",
                     "coref.algorithm", "statistical",
+                    "depparse.extradependencies", "MAXIMAL",
                     "tokenize.language", "en",
                     "tokenize.options", "splitHyphenated=false,americanize=true",
-                                        
-                    "ner.applyFineGrained", "true",            
-                    "ner.combinationMode", "HIGH_RECALL",      
-                    "ner.applyNumericClassifiers", "true",     
-                    "ner.useSUTime", "true",        
-                    
-                    "ner.sutime.markTimeRanges", "true",           
+                    "ner.applyFineGrained", "true",
+                    "ner.combinationMode", "HIGH_RECALL",
+                    "ner.applyNumericClassifiers", "true",
+                    "ner.useSUTime", "true",
+                    "ner.sutime.markTimeRanges", "true",
                     "ner.sutime.includeRange", "true"));
         }
 

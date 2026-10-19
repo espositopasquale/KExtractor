@@ -47,14 +47,12 @@ public class CorefResolver {
                     continue;
                 }
 
-                
                 if (m.mentionType == Dictionaries.MentionType.PROPER) {
                     continue;
                 }
 
-                
-                if (pronounsOnly &&
-                        m.mentionType != Dictionaries.MentionType.PRONOMINAL) {
+                if (pronounsOnly
+                        && m.mentionType != Dictionaries.MentionType.PRONOMINAL) {
                     continue;
                 }
 
@@ -70,9 +68,9 @@ public class CorefResolver {
                         .get(m.sentNum - 1)
                         .tokens();
 
-                if (m.startIndex < 1 ||
-                        m.endIndex - 2 >= tokens.size() ||
-                        m.startIndex - 1 > m.endIndex - 2) {
+                if (m.startIndex < 1
+                        || m.endIndex - 2 >= tokens.size()
+                        || m.startIndex - 1 > m.endIndex - 2) {
                     continue;
                 }
 
