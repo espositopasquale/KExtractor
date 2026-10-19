@@ -5,18 +5,18 @@
 ![License: GPL v3](https://img.shields.io/badge/License-GPL_v3-green.svg)
 
 
-KExtractor is a Java-based Command Line Interface (CLI) engineered to transform unstructured English text into structured, Semantic Web–compliant Knowledge Graphs. It leverages the Stanford CoreNLP toolkit to orchestrate a comprehensive linguistic pipeline encompassing coreference resolution, Named Entity Recognition (NER), Open Information Extraction (OpenIE).
+KExtractor is a Java command-line application that transforms English text into semantic knowledge graphs. Stanford CoreNLP provides linguistic annotations, dependency rules and VerbNet assign event roles, and the ChangeIsKey/graded-wsd ONNX model associates word occurrences with WordNet senses. Selected senses can then retrieve multilingual lexicalizations from OMW.
 
 ---
 ## Design Philosophy
 
-KExtractor is rooted in a deterministic, linguistically grounded architecture rather than a probabilistic, black-box approach. By relying strictly on rule-based and statistically deterministic NLP components, the system prioritizes reproducibility and analytical rigor. The result is a transparent pipeline where a given input consistently yields the same output.
+KExtractor preserves original text, occurrence offsets, resource identifiers and semantic evidence so extraction results can be inspected. The pipeline combines dependency rules with trained NLP models. A selected sense is a model decision, and its score is recorded separately from any claim of externally validated correctness.
 
 ---
 ## Core Capabilities
 - **Advanced Natural Language Processing** - Implements a shift-reduce dependency parsing strategy to ensure high-fidelity syntactic analysis and relationship extraction.
-- **Coreference Resolution** - Deterministically resolves pronominal references prior to relationship extraction, reducing entity ambiguity in the final graph structure.
-- **Semantic Web Integration** - Outputs linked data in JSON-LD (default), Turtle, RDF/XML, OWL-compatible RDF/XML, and N-Quads formats. The graphs integrate the schema.org vocabulary alongside a custom project namespace (`kex`) for downstream graph database ingestion and automated reasoning.
+- **Coreference Resolution** - Uses CoreNLP coreference chains to connect mentions while preserving the original text and evidence offsets in the final graph.
+- **Semantic Web Integration** - Outputs linked data in JSON-LD (default), Turtle, RDF/XML, OWL RDF/XML with vocabulary declarations, and N-Quads formats. The graphs integrate the schema.org vocabulary alongside a custom project namespace (`kex`) for downstream graph database ingestion.
 - **Multi-Format Graph Conversion** - Built-in utilities convert JSON-LD output into other W3C standards (Turtle, RDF/XML, N-Quads).
 - **Corpus Processing** - Supports both direct string input and batch processing of flat text documents via a terminal interface.
 - **Dual Execution Modes** - Runs processing directly in-process for quick tasks, or routes requests to a background CoreNLP server for large-scale processing without repeatedly loading linguistic resources.
@@ -48,19 +48,19 @@ cd KExtractor
 Utilize Maven to compile the source code and generate the executable archive (Fat JAR) encompassing all dependencies:
 
 ```bash
-mvn clean package
+mvn -f kextractor/pom.xml clean package
 ```
 
 Upon successful compilation, the following file will be generated:
 
 ```bash
-target/KExtractor-0.1.0.jar
+kextractor/target/KExtractor-0.1.0.jar
 ```
 
 Copy this JAR into the project root, alongside the launch scripts, and rename it to `kextractor.jar` - this is the filename the launch scripts (`run-mac-linux.sh` / `run-windows.bat`) expect to find in the project root.
 
 ```bash
-cp target/KExtractor-0.1.0.jar ./kextractor.jar
+cp kextractor/target/KExtractor-0.1.0.jar ./kextractor.jar
 ```
 
 ## Operational Syntax
@@ -71,17 +71,17 @@ KExtractor can be invoked either directly via `java -jar` or through the bundled
 ### Direct Invocation
 #### Direct String Analysis
 ```bash
-java -Xmx8g -jar target/KExtractor-0.1.0.jar \
+java -Xmx8g -jar kextractor/target/KExtractor-0.1.0.jar \
   "Barack Obama was born in Honolulu. He studied at Harvard." \
   output.json
 ```
 #### Document Ingestion
 ```bash
-java -Xmx8g -jar target/KExtractor-0.1.0.jar \
+java -Xmx8g -jar kextractor/target/KExtractor-0.1.0.jar \
   document.txt \
   result_graph.json
 ```
-> **Note:** If the output file parameter is omitted, the system defaults to generating a `kextractor-output.json` file in the current working directory.
+> **Note:** If the output file parameter is omitted, the system defaults to `kextractor-output.json` for JSON-LD, or the corresponding extension for other formats, in the current working directory.
 ### Launch Scripts (Recommended)
 The `run-mac-linux.sh` and `run-windows.bat` scripts wrap the same executable and support optional flags to control execution mode and output formatting.
 #### CLI Flags
@@ -148,42 +148,33 @@ run-windows.bat --server --format rdf ^
   ./document.txt ^
   graph-output.json
 ```
-## Serialized Output Example
-**Input:**
-```plaintext
-Linus Torvalds created the Linux kernel in 1991.
-```
-**Default Output (JSON-LD):**
-```json
-{
-   "rdfKnowledgeGraph" : {
-    "@context" : {
-      "schema" : "https://schema.org/",
-      "kex" : "http://kextractor.com/entity/",
-      "xsd" : "http://www.w3.org/2001/XMLSchema#"
-    },
-    "@graph" : [ {
-      "@id" : "kex:linus_torvalds",
-      "@type" : "schema:Person",
-      "name" : "Linus Torvalds",
-      "kex:createdLinuxKernelIn" : {
-        "@value" : "1991",
-        "@type" : "xsd:gYear"
-      },
-      "kex:created" : {
-        "@id" : "kex:linux_kernel"
-      }
-    }, {
-      "@id" : "kex:linux_kernel",
-      "@type" : "schema:Thing",
-      "name" : "Linux kernel"
-    } ]
-  }
-}
+## Semantic graph for retrieval
+
+The final `rdfKnowledgeGraph` now uses **semantic frames derived from dependency rules**, in both local and server modes. This changes the graph structure from direct OpenIE edges to document, chunk, frame, role mention and entity nodes. OpenIE triples remain available as diagnostics with `--full-analysis`.
+
+For `Alice did not write Book.`, the frame has predicate `write`, agent `Alice`, theme `Book`, and `kex:negated: true`. It links through `prov:wasDerivedFrom` to the original sentence. Negative and modal frames must not be treated as positive facts.
+
+| Node | Useful properties |
+|---|---|
+| `schema:DigitalDocument` | Original text, SHA-256 content hash, extraction method |
+| `kex:Chunk` | Sentence text, document reference, sentence index, character offsets, mentioned entities, events |
+| `kex:SemanticFrame` | Lemmatized predicate, agent/patient/theme/recipient/time/location/instrument/oblique, negation, modality, voice, retrieval text, source chunk |
+| `kex:RoleMention` | Semantic role, entity reference, original surface text and character offsets |
+| Entity | Label, NER type, source chunks |
+
+Offsets are zero-based UTF-16 character positions with an exclusive end, matching Java and CoreNLP. They refer to the original input; WSD fields explicitly identify their sentence-relative coordinate system. Entities have occurrence-based IDs, or share an ID through an explicit CoreNLP coreference chain. Identical labels alone do not merge different entities. IDs are scoped to the content hash of the document; cross-document entity linking is not performed.
+
+For a RAG index, embed each chunk's `schema:text` and store its `@id`, document ID and offsets as metadata. After vector retrieval, traverse `kex:events` and their role references to expand context, then cite the original chunk. `kex:retrievalText` provides the complete evidence sentence for event-level indexing. This project exports the graph; it does not create embeddings or a vector database.
+
+The document method is recorded as `verb-centered-dependency-frames-v2`. Each frame records whether its roles come from VerbNet consensus or dependency rules. This is an English syntax-based SRL system, not a trained PropBank/FrameNet labeler. Verbal predicates and copular attributes are supported. Enhanced dependencies supply explicit controlled subjects and relative references. A coordination rule shares an established subject with a conjoined predicate that has no subject of its own; its evidence is recorded separately. Missing control arguments are not guessed. Chunks correspond to sentences rather than overlapping token windows.
+
+All five serialization formats preserve these nodes and links. Explicit output filenames are used unchanged, so specify `output.ttl` when selecting Turtle:
+
+```bash
+./run-mac-linux.sh --format=ttl \
+  "Alice did not write Book." output.ttl
 ```
 
-If `--format=ttl` is used, an identical graph representation will be saved as `output.ttl` following W3C Turtle syntax.
-If `--format=owl` is used, the graph is saved as OWL-compatible RDF/XML, suitable for use as an `.owl` file.
 ## Troubleshooting
 ### java.lang.OutOfMemoryError
 This typically occurs when the JVM heap is too small for the combined memory footprint of the loaded pipeline models.
@@ -239,3 +230,118 @@ For more information on RDF and Semantic Web standards, see the World Wide Web C
 KExtractor leverages **Stanford CoreNLP** for natural language processing tasks, including tokenization, syntactic parsing, named entity recognition, coreference resolution, entity linking, coreference resolution, and Open Information Extraction.
 Stanford CoreNLP is Copyright © The Board of Trustees of the Leland Stanford Junior University and is distributed under the **GNU General Public License v3.0 or later (GPLv3)**.
 Source: https://github.com/stanfordnlp/CoreNLP
+### CLI validation and RDF semantics
+
+Input is required. Use `--help` for syntax. Both `--format ttl` and `--format=ttl` are supported. Without an output path, the filename is `kextractor-output` with the selected format extension (`.json`, `.ttl`, `.nq`, `.rdf`, `.owl`). An explicit filename is used unchanged. Failures return a nonzero exit status. Text files are read as UTF-8.
+
+Entity names use `schema:name`; relationships are represented by semantic frames and their `kex` roles. Both pipelines build the final graph from original-text annotations and coreference chains. `--full-analysis` additionally includes root-dependency summaries, resolved text and OpenIE triples as diagnostics. The former heuristic OpenIE-to-schema graph generator has been removed. Launcher readiness checks have bounded waits.
+
+### VerbNet integration
+
+The graph builder automatically loads the official XML lexicon from `verbnet/verbnet3.4` relative to the working directory. The external lexicon is not bundled in the JAR. Both local and server modes perform VerbNet matching in the KExtractor process.
+
+Set a different location with `KEX_VERBNET_DIR` (also supported by the launch scripts), or the JVM property `-Dkextractor.verbnet.dir=/absolute/path/to/verbnet3.4`. Use `off` to disable it. An explicitly configured missing or invalid directory causes an error; an absent default directory uses dependency rules.
+
+```bash
+KEX_VERBNET_DIR="$PWD/verbnet/verbnet3.4" ./run-mac-linux.sh \
+  "The news amused Alice." output.json
+```
+
+VerbNet XML classes and inherited frames are indexed by verb lemma. Matching uses nominal intransitive/transitive/ditransitive slots, prepositional complements, supported finite and infinitival complements, and explicitly represented lexical particles. Passive arguments are aligned to active frame slots; indirect and direct objects retain their distinct dative positions. Every required frame slot and every observed core argument must fit. Extra obliques can remain adjuncts and use dependency roles. The matcher retains candidates with the greatest observed argument coverage and preposition specificity. Unsupported frames fall back to dependency rules.
+
+`kex:verbnetClass`, `kex:verbnetFrame`, `kex:verbnetSyntax`, and `kex:verbnetCandidate` preserve compatible classes and inherited frame IDs. IDs use the declaring class plus a one-based XML frame ordinal. Roles are assigned where retained frame candidates agree, with selected WordNet sense keys used for lexical alignment when mapped. The graph records unmatched argument tokens and the method on each role mention. Supported syntactic restrictions are checked; subject/object control requires explicit enhanced subject evidence. Selectional restrictions and semantic predicates are not evaluated, as recorded separately. A single frame match does not establish a unique lexical sense or calibrated confidence.
+
+For example, matching `amuse` can assign `stimulus` to its subject and `experiencer` to its object, instead of the generic agent/theme fallback. Each role mention records `kex:roleAssignmentMethod`; frame metadata records matching status and all candidates. Existing evidence offsets, negation and modality are preserved.
+
+Official data and documentation: [CU CLEAR VerbNet](https://github.com/cu-clear/verbnet/). Keep the downloaded resource and its accompanying notices separately from application source.
+
+## Word sense disambiguation
+
+The application uses a single local backend: [ChangeIsKey/graded-wsd](https://huggingface.co/ChangeIsKey/graded-wsd), executed through ONNX Runtime in Java. `WordNetRepository` enumerates candidate senses from the target lemma and part of speech. `GradedWsdModel` compares the original sentence, with the exact occurrence marked by `<t>` and `</t>`, against each candidate definition. The Java tokenizer implements the supplied RoBERTa byte-level BPE specification from `tokenizer.json`.
+
+Place the compatible ONNX export and matching assets together:
+
+```text
+models/
+├── model.onnx
+├── tokenizer.json
+└── config.json
+```
+
+The model directory is discovered from `models/graded-wsd/` or `models/` in the working directory and its ancestors. Set `KEX_WSD_MODEL_DIR` or `-Dkextractor.wsd.model.dir=/absolute/model/directory` to choose it explicitly. Missing or invalid resources and inference failures stop extraction with an error. See [installation and model configuration](INSTALL.md#word-sense-disambiguation-resources) for details.
+
+The output is a **raw applicability regression score**, on a nominal annotation scale of 1–4; predictions can fall outside that range. It is not a probability. Scores are used directly without sigmoid, softmax or clipping. Selection requires a sufficient top score and a sufficient margin over the second candidate:
+
+| JVM property | Default | Purpose |
+|---|---:|---|
+| `kextractor.wsd.threshold` | `2.5` | Minimum raw score for the first-ranked candidate |
+| `kextractor.wsd.margin` | `0.25` | Minimum difference between the first two scores |
+| `kextractor.wsd.threads` | `2` | ONNX intra-operation CPU threads |
+
+These acceptance settings are heuristics. Ties and low scores or margins remain ambiguous. The model was trained on graded Oxford Dictionary applicability judgements; applying it to WordNet definitions is a transfer setting that needs domain evaluation.
+
+For example, run from the repository root:
+
+```bash
+java -Xmx8g \
+  -Dkextractor.wsd.threshold=2.5 \
+  -Dkextractor.wsd.margin=0.25 \
+  -jar kextractor/target/KExtractor-0.1.0.jar \
+  "The bank approved a loan while a fisherman waited on the bank of the river." \
+  output.json
+```
+
+Frames and role mentions expose `kex:wsdMethod: graded-wsd-onnx-v1`, target context and offsets, status, candidate synsets, sense keys, definitions and `kex:applicabilityScore`. Selection is attached to the occurrence, so repeated words can receive different senses. `resolved` means the acceptance rule selected a candidate; `kex:wsdValidated: false` records that it was not externally validated. Predicate sense keys filter VerbNet classes only when explicit member mappings are available; the graph retains syntax-based role evidence when lexical alignment is unavailable.
+
+### WordNet and multilingual lexicalizations
+
+A complete Princeton WordNet dictionary supplies English candidates and definitions. Maven bundles `kextractor/src/resources/dict` alongside standard `src/main/resources`. Configuration precedence is `-Dkextractor.wordnet.dir` or `KEX_WORDNET_DIR`, then a local `dict/`, then bundled resources. Packaged dictionary resources are extracted to temporary seekable files for JWI and removed on normal JVM exit. The actual dictionary version is read from the resource. Preserve its accompanying license.
+
+OMW is an optional read-only SQLite resource for lexicalizations of selected senses. Configure `KEX_OMW_DB` or `-Dkextractor.omw.db`; otherwise `omw_multilingual.db` is discovered in the working directory and its ancestors. Set `-Dkextractor.omw.db=off` to omit OMW. The default target language is Italian (`-Dkextractor.omw.language=ita`). Offset-based OMW lookup requires compatible Princeton WordNet 3.0 data. OMW supplies lexicalizations of the selected concept, not a translation of the complete sentence.
+
+### Assessing the model
+
+The test tree contains model contract checks, graph regression checks, and separate assessment runners for WSD and complex-text graphs. `mvn -f kextractor/pom.xml test` runs the checks without loading ONNX; model accuracy is measured by the WSD assessment runner below. From the IDE, run `com.kextractor.nlp.disambiguation.GradedWsdAssessment` on the test classpath, with the repository root as working directory and `-Xmx512m`. Arguments are:
+
+```text
+kextractor/src/test/resources/wsd/graded-wsd-assessment.json reports/graded-wsd-assessment.json
+```
+
+Append `validate` as the third argument to check labels and UTF-16 spans without loading ONNX. The dataset includes 30 synthetic sentences and 32 target occurrences, including repeated words, distractors, passives and Unicode. Gold lemmas and POS isolate WSD from tagging errors. Twenty-seven occurrences have manually proposed WordNet 3.0 labels; five intentionally lack enough context and are measured separately.
+
+The current diagnostic run ranked the labelled sense first in **26/27 cases (96.3%)**, with **23/24 correct accepted selections (95.8% precision)** and **24/27 coverage (88.9%)**. It also selected a sense for **3/5 deliberately underspecified occurrences**. These repeatedly inspected synthetic examples are development diagnostics, not an independent benchmark or a general accuracy claim. Review the labels and use untouched domain examples before calibrating thresholds.
+
+The [report](reports/graded-wsd-assessment.json) includes raw candidate rankings, acceptance decisions, category/POS metrics, configuration and resource hashes. Use a different report filename for each experiment. See [terminal assessment commands](INSTALL.md#assess-the-disambiguation-model) and the [dataset guide](kextractor/src/test/resources/wsd/README.md).
+
+## Complex sentences and OWL examples
+
+The graph retains the structure between clauses. `kex:clausalComplement`, `kex:openComplement`, `kex:adverbialClause`, and `kex:coordinatedWith` connect predicate frames. Conditional clauses also use `kex:condition`; relative clauses point to their nominal antecedent through `kex:relativeAntecedent`, with the reverse `kex:qualifiedByFrame` link. Clausal arguments reference frames through `kex:eventArgument` rather than becoming noun entities.
+
+Clauses attached to nouns through `acl` or `ccomp` use `kex:nominalComplementOf` and `kex:clausalContent`; a noun complement is not automatically reinterpreted as a relative clause. Basic clause structure and explicit argument enhancements are kept separate, following the [Universal Dependencies enhanced representation](https://universaldependencies.org/u/overview/enhanced-syntax.html).
+
+Participial modifiers such as `signed report` or `damaged bridge` qualify their nominal head through `kex:modifiedEntity` and `kex:qualifiedByFrame`. Their voice remains unspecified when the parse supplies no voice evidence. They are not treated as independent active statements detached from the modified noun.
+
+Enhanced dependencies explicitly supplied by CoreNLP can recover subjects in constructions such as `Alice promised to send…` and resolve a relative pronoun to its antecedent. A subject established this way can also be shared with a coordinated verb, as in `told the engineer to inspect and repair`. Each role mention records its dependency relation and whether its evidence is basic, enhanced, a shared coordination subject or nominal coordination. Coordinated nouns use a `kex:ArgumentGroup` with members and `and`/`or`, so an alternative such as `the doctor or the nurse` is preserved as a group. Subjects, objects and passive voice are handled per predicate.
+
+Negation and modal auxiliaries remain attached to their own clause. Coordinated frames link to their `kex:coordinationScope`; the extractor does not automatically distribute ambiguous negation or modality over conjunctions. Quantifier scope, such as `no scientist`, is not fully analyzed. Frames have `kex:assertionStatus: unasserted-event-description`: extracting a conditional, reported or desired action does not establish that it occurred. Retrieval should include the parent frame, connectives and source sentence.
+
+`--format=owl` exports RDF/XML containing an `owl:Ontology`, class declarations and separate object/data property declarations. The instances describe documents, discourse frames, mentions and participants. No domain/range constraints or world-event truth assertions are inferred. Exports can be opened in Protégé; serialization checks do not constitute OWL reasoner consistency checks.
+
+The [complex-text corpus](kextractor/src/test/resources/graph/complex-texts.json) produces these examples:
+
+| Example | Structures |
+|---|---|
+| [Passive transfer](reports/graph-assessment/passive-transfer-negation.owl) | Passive arguments, ditransitive transfer, temporal and concessive clauses, negation |
+| [Control and coordination](reports/graph-assessment/control-and-coordination.owl) | Subject/object control, shared arguments, coordinated verbs |
+| [Conditions and content](reports/graph-assessment/conditions-modality-and-content.owl) | Conditions, modal auxiliaries, reported complements and negation |
+| [Relatives and alternatives](reports/graph-assessment/relative-clauses-and-alternatives.owl) | Relative antecedents, coordinated recipients and alternatives |
+
+Regenerate them from the repository root:
+
+```bash
+mvn -f kextractor/pom.xml package
+java -Xmx2g -cp "kextractor/target/test-classes:kextractor/target/KExtractor-0.1.0.jar" \
+  com.kextractor.triples.semantic.GraphAssessment
+```
+
+In VS Code, select **Graph — complex OWL assessment**. The [summary](reports/graph-assessment/summary.json) records structural checks and export results. Each `.owl` has a corresponding source `.txt`, graph `.json`, and a real CoreNLP parse under `annotations/`. This runner uses a smaller CoreNLP configuration without coreference or OpenIE; the application still uses its configured full pipeline. See the [graph assessment guide](kextractor/src/test/resources/graph/README.md).
