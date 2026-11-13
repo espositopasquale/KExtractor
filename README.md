@@ -1,11 +1,54 @@
-# KExtractor
+<h1 align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset=".github/assets/logo-on-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset=".github/assets/logo-on-light.svg">
+    <img src=".github/assets/logo-on-light.svg" alt="KExtractor" width="480">
+  </picture>
+</h1>
 
-![Java 21](https://img.shields.io/badge/Java-21-blue.svg)
-![Maven](https://img.shields.io/badge/build-Maven-orange.svg)
-![License: GPL v3](https://img.shields.io/badge/License-GPL_v3-green.svg)
+<p align="center"><strong>Language in. Knowledge out.</strong></p>
+<p align="center">Linguistics-powered knowledge extraction from unstructured text.</p>
 
+<p align="center">
+  <img src="https://img.shields.io/badge/version-0.2.0-00FFDE?style=flat-square&amp;labelColor=101722" alt="Version 0.2.0">
+  <img src="https://img.shields.io/badge/Java-21-4300FF?style=flat-square&amp;labelColor=101722" alt="Java 21">
+  <img src="https://img.shields.io/badge/build-Maven-0065F8?style=flat-square&amp;labelColor=101722" alt="Build with Maven">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL_v3-00CAFF?style=flat-square&amp;labelColor=101722" alt="License: GPL v3"></a>
+</p>
 
-KExtractor is a Java command-line application that transforms English text into semantic knowledge graphs. Stanford CoreNLP provides linguistic annotations, dependency rules and VerbNet assign event roles, and the ChangeIsKey/graded-wsd ONNX model associates word occurrences with WordNet senses. Selected senses can then retrieve multilingual lexicalizations from OMW.
+<p align="center">
+  <a href="#design-philosophy">The approach</a> ·
+  <a href="#quick-install">Quick install</a> ·
+  <a href="#operational-syntax">Usage</a> ·
+  <a href="#semantic-graph-for-retrieval">Graph output</a>
+</p>
+
+KExtractor turns English text into connected, structured knowledge. It uses
+linguistic structure to identify events and their participants, keeping the
+extracted relationships linked to the original text so they can be explored
+and inspected.
+
+---
+## Quick install
+
+You need JDK 21 or later, Maven, and a complete Princeton WordNet dictionary.
+The compatible WSD model and tokenizer are in `models/`. Set
+`KEX_WORDNET_DIR` to the directory containing the WordNet `data.*`, `index.*`,
+and related dictionary files.
+
+```bash
+git clone https://github.com/espositopasquale/KExtractor.git
+cd KExtractor
+mvn -f kextractor/pom.xml clean package
+
+KEX_WORDNET_DIR=/path/to/wordnet/dict java -Xmx8g \
+  -Dkextractor.wsd.model.dir="$PWD/models" \
+  -jar kextractor/target/KExtractor-0.2.0.jar \
+  "The bank approved the loan." output.json
+```
+
+For resource setup, Windows instructions, launch scripts, and troubleshooting,
+see the [full installation guide](INSTALL.md).
 
 ---
 ## Design Philosophy
@@ -38,6 +81,11 @@ KExtractor preserves original text, occurrence offsets, resource identifiers and
 
 ---
 ## Deployment Instructions
+
+The **0.2.0 standard distribution** includes the executable, launchers, WordNet
+and VerbNet; the WSD model and optional OMW database remain external. Follow the
+[packaging workflow](packaging/BUILD.md) to prepare it locally in `release/0.2.0/`.
+
 ### 1. Clone the Repository
 ```bash
 git clone https://github.com/espositopasquale/KExtractor.git
@@ -54,13 +102,13 @@ mvn -f kextractor/pom.xml clean package
 Upon successful compilation, the following file will be generated:
 
 ```bash
-kextractor/target/KExtractor-0.1.0.jar
+kextractor/target/KExtractor-0.2.0.jar
 ```
 
 Copy this JAR into the project root, alongside the launch scripts, and rename it to `kextractor.jar` - this is the filename the launch scripts (`run-mac-linux.sh` / `run-windows.bat`) expect to find in the project root.
 
 ```bash
-cp kextractor/target/KExtractor-0.1.0.jar ./kextractor.jar
+cp kextractor/target/KExtractor-0.2.0.jar ./kextractor.jar
 ```
 
 ## Operational Syntax
@@ -71,13 +119,13 @@ KExtractor can be invoked either directly via `java -jar` or through the bundled
 ### Direct Invocation
 #### Direct String Analysis
 ```bash
-java -Xmx8g -jar kextractor/target/KExtractor-0.1.0.jar \
+java -Xmx8g -jar kextractor/target/KExtractor-0.2.0.jar \
   "Barack Obama was born in Honolulu. He studied at Harvard." \
   output.json
 ```
 #### Document Ingestion
 ```bash
-java -Xmx8g -jar kextractor/target/KExtractor-0.1.0.jar \
+java -Xmx8g -jar kextractor/target/KExtractor-0.2.0.jar \
   document.txt \
   result_graph.json
 ```
@@ -286,7 +334,7 @@ For example, run from the repository root:
 java -Xmx8g \
   -Dkextractor.wsd.threshold=2.5 \
   -Dkextractor.wsd.margin=0.25 \
-  -jar kextractor/target/KExtractor-0.1.0.jar \
+  -jar kextractor/target/KExtractor-0.2.0.jar \
   "The bank approved a loan while a fisherman waited on the bank of the river." \
   output.json
 ```
@@ -297,7 +345,7 @@ Frames and role mentions expose `kex:wsdMethod: graded-wsd-onnx-v1`, target cont
 
 A complete Princeton WordNet dictionary supplies English candidates and definitions. Maven bundles `kextractor/src/resources/dict` alongside standard `src/main/resources`. Configuration precedence is `-Dkextractor.wordnet.dir` or `KEX_WORDNET_DIR`, then a local `dict/`, then bundled resources. Packaged dictionary resources are extracted to temporary seekable files for JWI and removed on normal JVM exit. The actual dictionary version is read from the resource. Preserve its accompanying license.
 
-OMW is an optional read-only SQLite resource for lexicalizations of selected senses. Configure `KEX_OMW_DB` or `-Dkextractor.omw.db`; otherwise `omw_multilingual.db` is discovered in the working directory and its ancestors. Set `-Dkextractor.omw.db=off` to omit OMW. The default target language is Italian (`-Dkextractor.omw.language=ita`). Offset-based OMW lookup requires compatible Princeton WordNet 3.0 data. OMW supplies lexicalizations of the selected concept, not a translation of the complete sentence.
+OMW is an optional read-only SQLite resource for lexicalizations of selected senses. Configure `KEX_OMW_DB` or `-Dkextractor.omw.db`; otherwise `omw_multilingual.db` is discovered in the working directory and its ancestors. Set `-Dkextractor.omw.db=off` to omit OMW. By default, all available languages are retrieved (`-Dkextractor.omw.language=all`, also accepting `*`). Each `kex:translatedLabel` carries its own JSON-LD language tag, such as `it`, `en` or `fr`. To restrict the output, set a language code matching the database, for example `-Dkextractor.omw.language=ita`. Only lexicalizations of the selected sense are added; unresolved candidates receive none. Offset-based OMW lookup requires compatible Princeton WordNet 3.0 data. OMW supplies lexicalizations of the selected concept, not a translation of the complete sentence.
 
 ### Assessing the model
 
@@ -340,7 +388,7 @@ Regenerate them from the repository root:
 
 ```bash
 mvn -f kextractor/pom.xml package
-java -Xmx2g -cp "kextractor/target/test-classes:kextractor/target/KExtractor-0.1.0.jar" \
+java -Xmx2g -cp "kextractor/target/test-classes:kextractor/target/KExtractor-0.2.0.jar" \
   com.kextractor.triples.semantic.GraphAssessment
 ```
 

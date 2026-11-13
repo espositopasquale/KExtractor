@@ -55,7 +55,7 @@ To use another dictionary, set `KEX_WORDNET_DIR` or `-Dkextractor.wordnet.dir=/a
 
 ### Optional multilingual lexicalizations
 
-The read-only `omw_multilingual.db` database is discovered in the working directory and its ancestors. Override its location with `KEX_OMW_DB` or `-Dkextractor.omw.db=/absolute/path/to/database.db`. Set `-Dkextractor.omw.db=off` to run without multilingual lookup. Italian is the default output language; use `-Dkextractor.omw.language=fra`, for example, for French.
+The read-only `omw_multilingual.db` database is discovered in the working directory and its ancestors. Override its location with `KEX_OMW_DB` or `-Dkextractor.omw.db=/absolute/path/to/database.db`. Set `-Dkextractor.omw.db=off` to run without multilingual lookup. All available languages are retrieved by default (`-Dkextractor.omw.language=all`), with a language tag on every lexicalization. To restrict output to one language, use its database code, for example `-Dkextractor.omw.language=ita` for Italian or `-Dkextractor.omw.language=fra` for French. These settings affect lexicalizations only; linguistic analysis and WSD remain English.
 
 OMW lookups use the selected synset offset and POS and require compatible Princeton WordNet 3.0 data. OMW supplies multilingual lexicalizations after English disambiguation; it does not replace the English dictionary.
 
@@ -65,10 +65,10 @@ OMW lookups use the selected synset offset and POS and require compatible Prince
 mvn -f kextractor/pom.xml clean package
 ```
 
-The executable is `kextractor/target/KExtractor-0.1.0.jar`. Model files remain external to the JAR. To use the launch scripts, copy the executable beside them:
+The executable is `kextractor/target/KExtractor-0.2.0.jar`. Model files remain external to the JAR. To use the launch scripts, copy the executable beside them:
 
 ```bash
-cp kextractor/target/KExtractor-0.1.0.jar ./kextractor.jar
+cp kextractor/target/KExtractor-0.2.0.jar ./kextractor.jar
 ```
 
 Rebuild and recopy the JAR after source changes.
@@ -76,7 +76,7 @@ Rebuild and recopy the JAR after source changes.
 ## Run the application
 
 ```bash
-java -Xmx8g -jar kextractor/target/KExtractor-0.1.0.jar \
+java -Xmx8g -jar kextractor/target/KExtractor-0.2.0.jar \
   "The river overflowed its muddy bank." output.json
 ```
 
@@ -97,7 +97,7 @@ java -Xmx8g \
   -Dkextractor.wsd.threshold=2.5 \
   -Dkextractor.wsd.margin=0.25 \
   -Dkextractor.wsd.threads=2 \
-  -jar kextractor/target/KExtractor-0.1.0.jar \
+  -jar kextractor/target/KExtractor-0.2.0.jar \
   "The bank approved the loan." output.json
 ```
 
@@ -160,7 +160,7 @@ To generate the four complex-text diagnostic graphs:
 
 ```bash
 mvn -f kextractor/pom.xml package
-java -Xmx2g -cp "kextractor/target/test-classes:kextractor/target/KExtractor-0.1.0.jar" \
+java -Xmx2g -cp "kextractor/target/test-classes:kextractor/target/KExtractor-0.2.0.jar" \
   com.kextractor.triples.semantic.GraphAssessment
 ```
 
@@ -169,7 +169,7 @@ The default output is `reports/graph-assessment/`: each source has `.txt`, `.jso
 For a text file through the normal application pipeline:
 
 ```bash
-java -Xmx8g -jar kextractor/target/KExtractor-0.1.0.jar \
+java -Xmx8g -jar kextractor/target/KExtractor-0.2.0.jar \
   --format owl reports/graph-assessment/passive-transfer-negation.txt graph.owl
 ```
 
