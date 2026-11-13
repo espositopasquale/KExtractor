@@ -1,0 +1,260 @@
+{
+  "name": "Sentence structure and VerbNet graph assessment",
+  "language": "en",
+  "description": "Handwritten diagnostic paragraphs. Checks cover selected linguistic structures and RDF integrity; they are not an accuracy benchmark or proof that extracted events occurred.",
+  "cases": [
+    {
+      "id": "passive-transfer-negation",
+      "text": "The signed report was sent by Maria to the committee after the engineers had inspected the damaged bridge. Maria did not give the contractor the keys, although the contractor requested an immediate decision.",
+      "expectations": {
+        "predicates": [
+          "send",
+          "inspect",
+          "give",
+          "request"
+        ],
+        "modifiedPredicates": [
+          "sign",
+          "damage"
+        ],
+        "frameProperties": [
+          {
+            "predicate": "send",
+            "property": "kex:voice",
+            "value": "passive"
+          },
+          {
+            "predicate": "give",
+            "property": "kex:negated",
+            "value": true
+          }
+        ],
+        "links": [
+          {
+            "fromPredicate": "send",
+            "property": "kex:adverbialClause",
+            "toPredicate": "inspect"
+          }
+        ],
+        "minimumVerbNetFrames": 1,
+        "roleArguments": [
+          {
+            "predicate": "give",
+            "roles": [
+              "recipient"
+            ],
+            "lemma": "contractor",
+            "method": "verbnet-frame-consensus-v2"
+          },
+          {
+            "predicate": "send",
+            "roles": [
+              "agent"
+            ],
+            "lemma": "Maria",
+            "method": "verbnet-frame-consensus-v2"
+          },
+          {
+            "predicate": "inspect",
+            "roles": [
+              "theme",
+              "patient"
+            ],
+            "lemma": "bridge"
+          }
+        ]
+      }
+    },
+    {
+      "id": "control-and-coordination",
+      "text": "The director told the engineer to inspect the bridge and repair the damaged supports before the workers opened the road. The engineer promised to send Maria a detailed report, but the workers did not wait for the inspection.",
+      "expectations": {
+        "predicates": [
+          "tell",
+          "inspect",
+          "repair",
+          "open",
+          "promise",
+          "send",
+          "wait"
+        ],
+        "frameProperties": [
+          {
+            "predicate": "wait",
+            "property": "kex:negated",
+            "value": true
+          }
+        ],
+        "links": [
+          {
+            "fromPredicate": "tell",
+            "property": "kex:openComplement",
+            "toPredicate": "inspect"
+          },
+          {
+            "fromPredicate": "inspect",
+            "property": "kex:coordinatedWith",
+            "toPredicate": "repair"
+          },
+          {
+            "fromPredicate": "promise",
+            "property": "kex:openComplement",
+            "toPredicate": "send"
+          }
+        ],
+        "minimumVerbNetFrames": 1,
+        "roleArguments": [
+          {
+            "predicate": "inspect",
+            "roles": [
+              "agent"
+            ],
+            "lemma": "engineer"
+          },
+          {
+            "predicate": "repair",
+            "roles": [
+              "agent"
+            ],
+            "lemma": "engineer"
+          },
+          {
+            "predicate": "tell",
+            "roles": [
+              "topic"
+            ],
+            "lemma": "inspect",
+            "method": "verbnet-frame-consensus-v2"
+          }
+        ]
+      }
+    },
+    {
+      "id": "conditions-modality-and-content",
+      "text": "If the sensor detects a leak, the operator must close the valve and notify the supervisor before the pump can restart. The supervisor said that the technicians should not reopen the valve unless the pressure fell below the safe limit.",
+      "expectations": {
+        "predicates": [
+          "detect",
+          "close",
+          "notify",
+          "restart",
+          "say",
+          "reopen",
+          "fall"
+        ],
+        "frameProperties": [
+          {
+            "predicate": "close",
+            "property": "kex:modality",
+            "value": "must"
+          },
+          {
+            "predicate": "reopen",
+            "property": "kex:negated",
+            "value": true
+          },
+          {
+            "predicate": "reopen",
+            "property": "kex:modality",
+            "value": "should"
+          }
+        ],
+        "links": [
+          {
+            "fromPredicate": "close",
+            "property": "kex:condition",
+            "toPredicate": "detect"
+          },
+          {
+            "fromPredicate": "say",
+            "property": "kex:clausalComplement",
+            "toPredicate": "reopen"
+          },
+          {
+            "fromPredicate": "reopen",
+            "property": "kex:condition",
+            "toPredicate": "fall"
+          }
+        ],
+        "minimumVerbNetFrames": 1,
+        "roleArguments": [
+          {
+            "predicate": "say",
+            "roles": [
+              "topic"
+            ],
+            "lemma": "reopen",
+            "method": "verbnet-frame-consensus-v2"
+          },
+          {
+            "predicate": "notify",
+            "roles": [
+              "recipient"
+            ],
+            "lemma": "supervisor",
+            "method": "verbnet-frame-consensus-v2"
+          }
+        ]
+      }
+    },
+    {
+      "id": "relative-clauses-and-alternatives",
+      "text": "The scientist who developed the vaccine gave the doctor and the nurse a sample which the laboratory had tested. The doctor or the nurse may deliver the sample to the clinic, although the courier warned that the roads were flooded.",
+      "expectations": {
+        "predicates": [
+          "develop",
+          "give",
+          "test",
+          "deliver",
+          "warn"
+        ],
+        "frameProperties": [
+          {
+            "predicate": "deliver",
+            "property": "kex:modality",
+            "value": "may"
+          }
+        ],
+        "relativePredicates": [
+          "develop",
+          "test"
+        ],
+        "argumentGroups": [
+          {
+            "coordination": "and",
+            "minimumMembers": 2
+          },
+          {
+            "coordination": "or",
+            "minimumMembers": 2
+          }
+        ],
+        "minimumVerbNetFrames": 1,
+        "roleArguments": [
+          {
+            "predicate": "develop",
+            "roles": [
+              "agent"
+            ],
+            "lemma": "scientist"
+          },
+          {
+            "predicate": "test",
+            "roles": [
+              "theme",
+              "patient"
+            ],
+            "lemma": "sample"
+          },
+          {
+            "predicate": "give",
+            "roles": [
+              "recipient"
+            ],
+            "lemma": "nurse"
+          }
+        ]
+      }
+    }
+  ]
+}
