@@ -30,6 +30,7 @@ import com.kextractor.banner.Banner;
 import com.kextractor.nlp.pipeline.nonserver.Pipeline;
 import com.kextractor.nlp.pipeline.server.ServerPipeline;
 import com.kextractor.utils.GraphFormat;
+import com.kextractor.version.Version;
 
 public class App {
 
@@ -49,6 +50,10 @@ public class App {
         CliOptions options = CliOptions.parse(args);
         if (options.help()) {
             System.out.println("Usage: java -jar kextractor.jar [--server] [--full-analysis] [--graph-only] [--format jsonld|ttl|nquads|rdf|owl] <text|file.txt> [output_file]");
+            return;
+        }
+        if (options.version()) {
+            System.out.println(Version.getFullVersion());
             return;
         }
 
