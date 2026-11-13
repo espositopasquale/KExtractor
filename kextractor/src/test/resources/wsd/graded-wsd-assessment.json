@@ -1,0 +1,565 @@
+{
+  "schemaVersion": 1,
+  "name": "Graded WSD synthetic English assessment",
+  "description": "Synthetic English diagnostic cases migrated from the previous stress challenge. WordNet 3.0 sense keys were manually proposed and require independent review. These repeatedly inspected examples are development diagnostics, not an independent benchmark. Empty gold sets mark deliberately insufficient context; accepting one is diagnostic rather than automatically an error.",
+  "wordnetVersion": "3.0",
+  "offsetUnit": "UTF-16 code units; start inclusive, end exclusive",
+  "split": "diagnostic-development",
+  "cases": [
+    {
+      "id": "unicode-bank-loan-river-distractor",
+      "category": "unicode-distractor",
+      "text": "🏦 Although the river was rising, the bank approved the mortgage application.",
+      "targets": [
+        {
+          "surface": "bank",
+          "lemma": "bank",
+          "pos": "NN",
+          "start": 38,
+          "end": 42,
+          "goldSenseKeys": [
+            "bank%1:14:00::"
+          ],
+          "expected": "select"
+        }
+      ]
+    },
+    {
+      "id": "bank-river-finance-distractor",
+      "category": "distractor",
+      "text": "After discussing the mortgage, she sat on the bank and watched the canoe drift past.",
+      "targets": [
+        {
+          "surface": "bank",
+          "lemma": "bank",
+          "pos": "NN",
+          "start": 46,
+          "end": 50,
+          "goldSenseKeys": [
+            "bank%1:17:01::"
+          ],
+          "expected": "select"
+        }
+      ]
+    },
+    {
+      "id": "bank-two-occurrences",
+      "category": "repeated",
+      "text": "The bank approved a loan while a fisherman waited on the bank of the river.",
+      "targets": [
+        {
+          "surface": "bank",
+          "lemma": "bank",
+          "pos": "NN",
+          "start": 4,
+          "end": 8,
+          "goldSenseKeys": [
+            "bank%1:14:00::"
+          ],
+          "expected": "select"
+        },
+        {
+          "surface": "bank",
+          "lemma": "bank",
+          "pos": "NN",
+          "start": 57,
+          "end": 61,
+          "goldSenseKeys": [
+            "bank%1:17:01::"
+          ],
+          "expected": "select"
+        }
+      ]
+    },
+    {
+      "id": "bank-money-container",
+      "category": "lexical",
+      "text": "The child shook the bank until coins fell through its narrow slot.",
+      "targets": [
+        {
+          "surface": "bank",
+          "lemma": "bank",
+          "pos": "NN",
+          "start": 20,
+          "end": 24,
+          "goldSenseKeys": [
+            "bank%1:06:01::"
+          ],
+          "expected": "select"
+        }
+      ]
+    },
+    {
+      "id": "plant-factory-garden",
+      "category": "distractor",
+      "text": "The plant manufactures irrigation pumps for gardeners.",
+      "targets": [
+        {
+          "surface": "plant",
+          "lemma": "plant",
+          "pos": "NN",
+          "start": 4,
+          "end": 9,
+          "goldSenseKeys": [
+            "plant%1:06:01::"
+          ],
+          "expected": "select"
+        }
+      ]
+    },
+    {
+      "id": "plant-organism-factory",
+      "category": "distractor",
+      "text": "Beside the factory gate, a plant grew new leaves after the rain.",
+      "targets": [
+        {
+          "surface": "plant",
+          "lemma": "plant",
+          "pos": "NN",
+          "start": 27,
+          "end": 32,
+          "goldSenseKeys": [
+            "plant%1:03:00::"
+          ],
+          "expected": "select"
+        }
+      ]
+    },
+    {
+      "id": "plant-two-occurrences",
+      "category": "repeated",
+      "text": "The plant produces fertilizer while the plant beside its gate grows new leaves.",
+      "targets": [
+        {
+          "surface": "plant",
+          "lemma": "plant",
+          "pos": "NN",
+          "start": 4,
+          "end": 9,
+          "goldSenseKeys": [
+            "plant%1:06:01::"
+          ],
+          "expected": "select"
+        },
+        {
+          "surface": "plant",
+          "lemma": "plant",
+          "pos": "NN",
+          "start": 40,
+          "end": 45,
+          "goldSenseKeys": [
+            "plant%1:03:00::"
+          ],
+          "expected": "select"
+        }
+      ]
+    },
+    {
+      "id": "crane-machine-bird-distractor",
+      "category": "distractor",
+      "text": "A bird landed on the crane while it lifted a steel beam.",
+      "targets": [
+        {
+          "surface": "crane",
+          "lemma": "crane",
+          "pos": "NN",
+          "start": 21,
+          "end": 26,
+          "goldSenseKeys": [
+            "crane%1:06:00::"
+          ],
+          "expected": "select"
+        }
+      ]
+    },
+    {
+      "id": "crane-bird-machine-distractor",
+      "category": "distractor",
+      "text": "Beside the construction site, a crane spread its wings over the marsh.",
+      "targets": [
+        {
+          "surface": "crane",
+          "lemma": "crane",
+          "pos": "NN",
+          "start": 32,
+          "end": 37,
+          "goldSenseKeys": [
+            "crane%1:05:00::"
+          ],
+          "expected": "select"
+        }
+      ]
+    },
+    {
+      "id": "bat-animal-ball-distractor",
+      "category": "distractor",
+      "text": "A bat flew above the baseball field, hunting insects in the dark.",
+      "targets": [
+        {
+          "surface": "bat",
+          "lemma": "bat",
+          "pos": "NN",
+          "start": 2,
+          "end": 5,
+          "goldSenseKeys": [
+            "bat%1:05:00::"
+          ],
+          "expected": "select"
+        }
+      ]
+    },
+    {
+      "id": "bat-sports-cave-distractor",
+      "category": "distractor",
+      "text": "After exploring the cave, the player picked up a bat and hit the baseball.",
+      "targets": [
+        {
+          "surface": "bat",
+          "lemma": "bat",
+          "pos": "NN",
+          "start": 49,
+          "end": 52,
+          "goldSenseKeys": [
+            "bat%1:06:00::"
+          ],
+          "expected": "select"
+        }
+      ]
+    },
+    {
+      "id": "mouse-device-animal-distractor",
+      "category": "distractor",
+      "text": "The cat watched as she clicked the mouse to move the cursor.",
+      "targets": [
+        {
+          "surface": "mouse",
+          "lemma": "mouse",
+          "pos": "NN",
+          "start": 35,
+          "end": 40,
+          "goldSenseKeys": [
+            "mouse%1:06:00::"
+          ],
+          "expected": "select"
+        }
+      ]
+    },
+    {
+      "id": "mouse-animal-device-distractor",
+      "category": "distractor",
+      "text": "Behind the computer screen, a mouse gnawed seeds and hid in its nest.",
+      "targets": [
+        {
+          "surface": "mouse",
+          "lemma": "mouse",
+          "pos": "NN",
+          "start": 30,
+          "end": 35,
+          "goldSenseKeys": [
+            "mouse%1:05:00::"
+          ],
+          "expected": "select"
+        }
+      ]
+    },
+    {
+      "id": "charge-battery-fee",
+      "category": "verb",
+      "text": "The technician charged the battery before discussing the repair fee.",
+      "targets": [
+        {
+          "surface": "charged",
+          "lemma": "charge",
+          "pos": "VB",
+          "start": 15,
+          "end": 22,
+          "goldSenseKeys": [
+            "charge%2:30:00::"
+          ],
+          "expected": "select"
+        }
+      ]
+    },
+    {
+      "id": "charge-fee-battery",
+      "category": "verb",
+      "text": "The mechanic charged me fifty dollars to replace the battery.",
+      "targets": [
+        {
+          "surface": "charged",
+          "lemma": "charge",
+          "pos": "VB",
+          "start": 13,
+          "end": 20,
+          "goldSenseKeys": [
+            "charge%2:40:02::",
+            "charge%2:40:03::"
+          ],
+          "expected": "select"
+        }
+      ]
+    },
+    {
+      "id": "charge-legal",
+      "category": "verb",
+      "text": "The prosecutor charged the accountant with fraud after reviewing the invoices.",
+      "targets": [
+        {
+          "surface": "charged",
+          "lemma": "charge",
+          "pos": "VB",
+          "start": 15,
+          "end": 22,
+          "goldSenseKeys": [
+            "charge%2:32:00::"
+          ],
+          "expected": "select"
+        }
+      ]
+    },
+    {
+      "id": "charge-attack",
+      "category": "verb",
+      "text": "The cavalry charged the enemy positions despite heavy gunfire.",
+      "targets": [
+        {
+          "surface": "charged",
+          "lemma": "charge",
+          "pos": "VB",
+          "start": 12,
+          "end": 19,
+          "goldSenseKeys": [
+            "charge%2:33:00::"
+          ],
+          "expected": "select"
+        }
+      ]
+    },
+    {
+      "id": "charge-passive",
+      "category": "passive",
+      "text": "The battery was charged overnight before the mechanic opened the workshop.",
+      "targets": [
+        {
+          "surface": "charged",
+          "lemma": "charge",
+          "pos": "VB",
+          "start": 16,
+          "end": 23,
+          "goldSenseKeys": [
+            "charge%2:30:00::"
+          ],
+          "expected": "select"
+        }
+      ]
+    },
+    {
+      "id": "draw-picture",
+      "category": "verb",
+      "text": "The officer drew a portrait of the suspect with a pencil.",
+      "targets": [
+        {
+          "surface": "drew",
+          "lemma": "draw",
+          "pos": "VB",
+          "start": 12,
+          "end": 16,
+          "goldSenseKeys": [
+            "draw%2:36:00::",
+            "draw%2:35:01::"
+          ],
+          "expected": "select"
+        }
+      ]
+    },
+    {
+      "id": "draw-weapon",
+      "category": "verb",
+      "text": "The officer drew a pistol from its holster when the suspect approached.",
+      "targets": [
+        {
+          "surface": "drew",
+          "lemma": "draw",
+          "pos": "VB",
+          "start": 12,
+          "end": 16,
+          "goldSenseKeys": [
+            "draw%2:38:01::"
+          ],
+          "expected": "select"
+        }
+      ]
+    },
+    {
+      "id": "draw-conclusion",
+      "category": "verb",
+      "text": "The researcher drew a conclusion after comparing the measurements.",
+      "targets": [
+        {
+          "surface": "drew",
+          "lemma": "draw",
+          "pos": "VB",
+          "start": 15,
+          "end": 19,
+          "goldSenseKeys": [
+            "draw%2:31:00::"
+          ],
+          "expected": "select"
+        }
+      ]
+    },
+    {
+      "id": "draw-water",
+      "category": "verb",
+      "text": "She drew water from the well before sketching the landscape.",
+      "targets": [
+        {
+          "surface": "drew",
+          "lemma": "draw",
+          "pos": "VB",
+          "start": 4,
+          "end": 8,
+          "goldSenseKeys": [
+            "draw%2:38:00::"
+          ],
+          "expected": "select"
+        }
+      ]
+    },
+    {
+      "id": "serve-food",
+      "category": "verb",
+      "text": "Before the tennis match, the waiter served soup to the players.",
+      "targets": [
+        {
+          "surface": "served",
+          "lemma": "serve",
+          "pos": "VB",
+          "start": 36,
+          "end": 42,
+          "goldSenseKeys": [
+            "serve%2:34:00::",
+            "serve%2:34:01::"
+          ],
+          "expected": "select"
+        }
+      ]
+    },
+    {
+      "id": "serve-tennis",
+      "category": "verb",
+      "text": "After lunch, the tennis player served the ball over the net.",
+      "targets": [
+        {
+          "surface": "served",
+          "lemma": "serve",
+          "pos": "VB",
+          "start": 31,
+          "end": 37,
+          "goldSenseKeys": [
+            "serve%2:33:01::"
+          ],
+          "expected": "select"
+        }
+      ]
+    },
+    {
+      "id": "serve-prison",
+      "category": "verb",
+      "text": "He served five years in prison before becoming a waiter.",
+      "targets": [
+        {
+          "surface": "served",
+          "lemma": "serve",
+          "pos": "VB",
+          "start": 3,
+          "end": 9,
+          "goldSenseKeys": [
+            "serve%2:42:00::"
+          ],
+          "expected": "select"
+        }
+      ]
+    },
+    {
+      "id": "underspecified-bank",
+      "category": "underspecified",
+      "text": "They discussed the bank.",
+      "targets": [
+        {
+          "surface": "bank",
+          "lemma": "bank",
+          "pos": "NN",
+          "start": 19,
+          "end": 23,
+          "goldSenseKeys": [],
+          "expected": "abstain"
+        }
+      ]
+    },
+    {
+      "id": "underspecified-plant",
+      "category": "underspecified",
+      "text": "They discussed the plant.",
+      "targets": [
+        {
+          "surface": "plant",
+          "lemma": "plant",
+          "pos": "NN",
+          "start": 19,
+          "end": 24,
+          "goldSenseKeys": [],
+          "expected": "abstain"
+        }
+      ]
+    },
+    {
+      "id": "underspecified-crane",
+      "category": "underspecified",
+      "text": "They discussed the crane.",
+      "targets": [
+        {
+          "surface": "crane",
+          "lemma": "crane",
+          "pos": "NN",
+          "start": 19,
+          "end": 24,
+          "goldSenseKeys": [],
+          "expected": "abstain"
+        }
+      ]
+    },
+    {
+      "id": "underspecified-bat",
+      "category": "underspecified",
+      "text": "They discussed the bat.",
+      "targets": [
+        {
+          "surface": "bat",
+          "lemma": "bat",
+          "pos": "NN",
+          "start": 19,
+          "end": 22,
+          "goldSenseKeys": [],
+          "expected": "abstain"
+        }
+      ]
+    },
+    {
+      "id": "underspecified-charge",
+      "category": "underspecified",
+      "text": "They charged yesterday.",
+      "targets": [
+        {
+          "surface": "charged",
+          "lemma": "charge",
+          "pos": "VB",
+          "start": 5,
+          "end": 12,
+          "goldSenseKeys": [],
+          "expected": "abstain"
+        }
+      ]
+    }
+  ]
+}

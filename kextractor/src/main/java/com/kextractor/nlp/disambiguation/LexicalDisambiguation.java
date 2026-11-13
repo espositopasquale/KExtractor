@@ -14,6 +14,7 @@ import java.util.TreeSet;
 public final class LexicalDisambiguation implements AutoCloseable {
 
     public static final String METHOD = "graded-wsd-onnx-v1";
+    private static final Map<String, String> LANGUAGE_TAGS = languageTags();
 
     public record Candidate(edu.mit.jwi.item.ISynset synset, double score, Set<String> senseKeys) {
 
@@ -61,7 +62,7 @@ public final class LexicalDisambiguation implements AutoCloseable {
         if (!Double.isFinite(threshold) || !Double.isFinite(margin) || margin < 0) {
             throw new IllegalArgumentException("WSD threshold must be finite and margin nonnegative");
         }
-        language = System.getProperty("kextractor.omw.language", "ita").toLowerCase(Locale.ROOT);
+        language = System.getProperty("kextractor.omw.language", "all").strip().toLowerCase(Locale.ROOT);
         WordNetRepository dictionary = WordNetRepository.configured();
         GradedWsdModel loaded = null;
         OmwMultilingualRepository translations = null;
@@ -182,10 +183,11 @@ public final class LexicalDisambiguation implements AutoCloseable {
             data.put("kex:selectedSynset", result.selected().synset().getID().toString());
             data.put("kex:selectedSenseKey", new TreeSet<>(result.selected().senseKeys()));
             if (omw != null) try {
-                List<String> labels = omw.getTranslations(result.selected().synset(), language);
+                var labels = omw.getLexicalizations(result.selected().synset(), language);
                 if (!labels.isEmpty()) {
                     data.put("kex:translatedLabel", labels.stream()
-                            .map(label -> Map.of("@value", label, "@language", languageTag(language))).toList());
+                            .map(label -> Map.of("@value", label.lemma(), "@language", languageTag(label.language())))
+                            .distinct().toList());
                 }
             } catch (java.sql.SQLException e) {
                 throw new IllegalStateException("Cannot read OMW translations", e);
@@ -194,21 +196,17 @@ public final class LexicalDisambiguation implements AutoCloseable {
         return data;
     }
 
-    private static String languageTag(String language) {
-        return switch (language) {
-            case "ita" ->
-                "it";
-            case "eng" ->
-                "en";
-            case "fra" ->
-                "fr";
-            case "deu" ->
-                "de";
-            case "spa" ->
-                "es";
-            default ->
-                language;
-        };
+    static String languageTag(String language) {
+        String normalized = language.strip().toLowerCase(Locale.ROOT).replace('_', '-');
+        return LANGUAGE_TAGS.getOrDefault(normalized, normalized);
+    }
+
+    private static Map<String, String> languageTags() {
+        Map<String, String> tags = new LinkedHashMap<>();
+        for (String code : Locale.getISOLanguages()) {
+            tags.put(Locale.forLanguageTag(code).getISO3Language(), code);
+        }
+        return Map.copyOf(tags);
     }
 
     @Override

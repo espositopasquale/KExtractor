@@ -56,3 +56,5 @@ __pycache__/
 /.agents/
 /.codex/
 /.aws/
+
+model_test/
