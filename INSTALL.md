@@ -26,7 +26,9 @@ Model weights, downloaded WordNet/VerbNet data, local databases and generated
 resources locally using the paths or environment variables below. The small
 assessment datasets under `kextractor/src/test/resources/` remain versioned.
 
-KExtractor runs [ChangeIsKey/graded-wsd](https://huggingface.co/ChangeIsKey/graded-wsd) locally through ONNX Runtime 1.20.0. Place the compatible ONNX export and its matching tokenizer/configuration together:
+KExtractor runs [ChangeIsKey/graded-wsd](https://huggingface.co/ChangeIsKey/graded-wsd) locally through ONNX Runtime 1.20.0. The Hugging Face page is the upstream checkpoint source. Obtain or prepare a compatible ONNX export separately. Downloading the checkpoint alone does not provide the required `model.onnx`.
+
+Place the compatible ONNX export and its matching tokenizer/configuration together:
 
 ```text
 models/
@@ -35,7 +37,7 @@ models/
 └── config.json
 ```
 
-The current installation already provides these files. Preserve the model revision, license and accompanying tokenizer files with your deployment. Application startup does not download model weights. Python and a separate inference service are not required; RoBERTa byte-level BPE tokenization runs in Java using the supplied `tokenizer.json`.
+The source checkout and standard binary distribution do not include these model files, and application startup does not download them. Preserve the model revision, license and accompanying tokenizer files with your deployment. Python and a separate inference service are not required at runtime; RoBERTa byte-level BPE tokenization runs in Java using the supplied `tokenizer.json`.
 
 The ONNX graph must accept rank-two INT64 `input_ids` and `attention_mask`, optionally `token_type_ids`, and produce FLOAT32 `logits` of shape `[batch, 1]`. Its configuration must identify RoBERTa regression and its tokenizer must include the trained `<t>` and `</t>` target markers. The application validates this contract rather than accepting arbitrary ONNX encoders.
 
@@ -88,6 +90,42 @@ Or use the launcher, which can also manage the CoreNLP server:
 ```
 
 For an IDE launch, use `com.kextractor.app.App` as the main class, repository root as the working directory, `-Xmx8g` as VM options and the quoted text plus output path as program arguments. Direct main-class invocation does not start the CoreNLP server automatically.
+
+## Set environment variables
+
+Set a variable in the terminal before starting KExtractor. The launcher and Java process inherit it; the setting lasts only for that terminal session. Set only the variables for resources you need to provide or override. WordNet and VerbNet may already be available in the checkout or distribution, and OMW is optional.
+
+On macOS or Linux, use `export`:
+
+```bash
+export KEX_WSD_MODEL_DIR="$PWD/models"
+export KEX_WORDNET_DIR="/absolute/path/to/wordnet/dict"
+export KEX_VERBNET_DIR="$PWD/verbnet/verbnet3.4"
+export KEX_OMW_DB="/absolute/path/to/omw_multilingual.db"
+java -Xmx8g -jar kextractor/target/KExtractor-0.2.0.jar "The bank approved the loan." output.json
+```
+
+In Windows Command Prompt, use `set`:
+
+```bat
+set "KEX_WSD_MODEL_DIR=%CD%\models"
+set "KEX_WORDNET_DIR=C:\path\to\wordnet\dict"
+set "KEX_VERBNET_DIR=%CD%\verbnet\verbnet3.4"
+set "KEX_OMW_DB=C:\path\to\omw_multilingual.db"
+java -Xmx8g -jar kextractor\target\KExtractor-0.2.0.jar "The bank approved the loan." output.json
+```
+
+In PowerShell, use `$env:`:
+
+```powershell
+$env:KEX_WSD_MODEL_DIR = "$PWD\models"
+$env:KEX_WORDNET_DIR = "C:\path\to\wordnet\dict"
+$env:KEX_VERBNET_DIR = "$PWD\verbnet\verbnet3.4"
+$env:KEX_OMW_DB = "C:\path\to\omw_multilingual.db"
+java -Xmx8g -jar kextractor\target\KExtractor-0.2.0.jar "The bank approved the loan." output.json
+```
+
+Replace example paths with the actual resource locations. To make a setting persistent across terminal sessions, add it to your shell profile or use your operating system's environment-variable settings. To remove a temporary setting, use `unset NAME` in Bash, `set NAME=` in Command Prompt, or `$env:NAME = $null` in PowerShell.
 
 ### Acceptance settings
 

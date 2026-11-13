@@ -32,17 +32,22 @@ and inspected.
 ## Quick install
 
 You need JDK 21 or later, Maven, and a complete Princeton WordNet dictionary.
-The compatible WSD model and tokenizer are in `models/`. Set
-`KEX_WORDNET_DIR` to the directory containing the WordNet `data.*`, `index.*`,
-and related dictionary files.
+The model files are separate resources: the upstream graded-wsd checkpoint is
+at [ChangeIsKey/graded-wsd](https://huggingface.co/ChangeIsKey/graded-wsd), but
+KExtractor does not publish a compatible ONNX export or an exporter. Obtain or
+prepare a compatible export separately; see the [WSD resource instructions](INSTALL.md#word-sense-disambiguation-resources).
+Place `model.onnx`, `tokenizer.json` and `config.json` in `models/` for the
+command below. Set `KEX_WORDNET_DIR` to the directory containing the WordNet
+`data.*`, `index.*`, and related dictionary files.
 
 ```bash
 git clone https://github.com/espositopasquale/KExtractor.git
 cd KExtractor
 mvn -f kextractor/pom.xml clean package
 
-KEX_WORDNET_DIR=/path/to/wordnet/dict java -Xmx8g \
-  -Dkextractor.wsd.model.dir="$PWD/models" \
+export KEX_WORDNET_DIR="/path/to/wordnet/dict"
+export KEX_WSD_MODEL_DIR="$PWD/models"
+java -Xmx8g \
   -jar kextractor/target/KExtractor-0.2.0.jar \
   "The bank approved the loan." output.json
 ```
